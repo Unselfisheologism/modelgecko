@@ -1,0 +1,21 @@
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+
+export async function GET() {
+    try {
+        const models = await prisma.model.findMany({
+            select: { modalities: true },
+        })
+
+        const allModalities = models.flatMap(m => m.modalities)
+        const uniqueModalities = [...new Set(allModalities)].sort()
+
+        return NextResponse.json({ data: uniqueModalities })
+    } catch (error) {
+        console.error('Error fetching modalities:', error)
+        return NextResponse.json(
+            { error: 'Failed to fetch modalities' },
+            { status: 500 }
+        )
+    }
+}

@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Model {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  name            String
+  provider        String
+  releaseDate     DateTime?
+  contextWindow   Int?
+  modalities      String[]
+  benchmarkScores Json?
+  pricing         Json?
+  capabilities    String[]
+  links           Json?
+  lastUpdated     DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([provider])
+  @@index([name])
+}
+
+model ApiUser {
+  id              String   @id @default(uuid())
+  clerkUserId     String   @unique
+  email           String   @unique
+  unkeyKeyId      String?  @unique
+  unkeyKey        String?  // The actual API key (shown once)
+  dodoCustomerId  String?
+  dodoSubscriptionId String?
+  credits         Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([clerkUserId])
+  @@index([email])
+}
+
+model UsageLog {
+  id          String   @id @default(uuid())
+  apiUserId   String
+  endpoint    String
+  method      String
+  statusCode  Int
+  creditsUsed Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  @@index([apiUserId])
+  @@index([createdAt])
+}
+
+model PricingPlan {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  dodoPriceId       String   @unique
+  credits           Int
+  priceUsd          Float
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
