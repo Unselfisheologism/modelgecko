@@ -1,4 +1,4 @@
-import { Unkey } from '@unkey/unkey'
+import { Unkey } from '@unkey/api'
 
 const unkey = new Unkey({
     rootKey: process.env.UNKEY_ROOT_KEY!,

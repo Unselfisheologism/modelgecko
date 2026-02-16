@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 const benchmarks = [
     { id: 'mmlu', name: 'MMLU', description: 'Massive Multitask Language Understanding' },
@@ -17,7 +18,7 @@ export default async function LeaderboardPage({
 
     const models = await prisma.model.findMany({
         where: {
-            benchmarkScores: { not: null },
+            benchmarkScores: { not: Prisma.JsonNull },
         },
         orderBy: { name: 'asc' },
     })
@@ -68,8 +69,8 @@ export default async function LeaderboardPage({
                             key={b.id}
                             href={`/leaderboard?benchmark=${b.id}`}
                             className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap ${benchmark === b.id
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'border hover:bg-muted'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'border hover:bg-muted'
                                 }`}
                         >
                             {b.name}

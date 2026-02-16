@@ -8,7 +8,7 @@ export async function GET() {
         })
 
         const allModalities = models.flatMap(m => m.modalities)
-        const uniqueModalities = [...new Set(allModalities)].sort()
+        const uniqueModalities = Array.from(new Set(allModalities)).sort()
 
         return NextResponse.json({ data: uniqueModalities })
     } catch (error) {

@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { ArrowRight, BarChart3, Database, Globe, Key, Zap } from 'lucide-react'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export default async function HomePage() {
     // Fetch models for leaderboard
     const models = await prisma.model.findMany({
         where: {
-            benchmarkScores: { not: null },
+            benchmarkScores: { not: Prisma.JsonNull },
         },
         orderBy: { name: 'asc' },
         take: 10,

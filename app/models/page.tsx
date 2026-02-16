@@ -34,8 +34,8 @@ export default async function ModelsPage({
 
     // Get unique providers and modalities for filters
     const allModels = await prisma.model.findMany()
-    const providers = [...new Set(allModels.map((m) => m.provider))].sort()
-    const modalities = [...new Set(allModels.flatMap((m) => m.modalities))].sort()
+    const providers = Array.from(new Set(allModels.map((m) => m.provider))).sort()
+    const modalities = Array.from(new Set(allModels.flatMap((m) => m.modalities))).sort()
 
     return (
         <div className="min-h-screen">

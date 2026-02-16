@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 
 export async function GET(
     request: Request,
@@ -13,7 +14,7 @@ export async function GET(
         const models = await prisma.model.findMany({
             where: {
                 benchmarkScores: {
-                    not: null,
+                    not: Prisma.JsonNull,
                 },
             },
             orderBy: {

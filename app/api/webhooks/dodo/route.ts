@@ -80,13 +80,19 @@ export async function POST(request: Request) {
             case 'customer.subscription.deleted': {
                 const { customer_id } = event.data
 
-                // Downgrade user to free tier
-                await prisma.apiUser.update({
+                // Find user by dodoCustomerId first, then downgrade
+                const user = await prisma.apiUser.findFirst({
                     where: { dodoCustomerId: customer_id },
-                    data: {
-                        dodoSubscriptionId: null,
-                    },
                 })
+
+                if (user) {
+                    await prisma.apiUser.update({
+                        where: { id: user.id },
+                        data: {
+                            dodoSubscriptionId: null,
+                        },
+                    })
+                }
 
                 break
             }
