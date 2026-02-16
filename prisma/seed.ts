@@ -268,9 +268,7 @@ const models = [
         name: 'DALL-E 3',
         provider: 'OpenAI',
         releaseDate: new Date('2023-10-02'),
-        contextWindow: null,
         modalities: ['image'],
-        benchmarkScores: null,
         pricing: {
             input: 0.004,
             output: 0.0,
@@ -287,9 +285,7 @@ const models = [
         name: 'Midjourney V6',
         provider: 'Midjourney',
         releaseDate: new Date('2023-12-21'),
-        contextWindow: null,
         modalities: ['image'],
-        benchmarkScores: null,
         pricing: {
             input: 0.01,
             output: 0.0,
@@ -306,9 +302,7 @@ const models = [
         name: 'Suno V4',
         provider: 'Suno AI',
         releaseDate: new Date('2024-12-12'),
-        contextWindow: null,
         modalities: ['audio'],
-        benchmarkScores: null,
         pricing: {
             input: 0.10,
             output: 0.0,
