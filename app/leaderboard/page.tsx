@@ -9,6 +9,8 @@ const benchmarks = [
     { id: 'humaneval', name: 'HumanEval', description: 'HumanEval: Code Generation Benchmark' },
 ]
 
+export const dynamic = 'force-dynamic'
+
 export default async function LeaderboardPage({
     searchParams,
 }: {

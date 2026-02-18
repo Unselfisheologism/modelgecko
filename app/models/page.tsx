@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { Badge } from '@/components/ui/badge'
 import { SearchInput } from '@/components/search-input'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ModelsPage({
     searchParams,
 }: {
