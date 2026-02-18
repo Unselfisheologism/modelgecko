@@ -3,6 +3,8 @@ import { ArrowRight, BarChart3, Database, Globe, Key, Zap } from 'lucide-react'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
     // Fetch models for leaderboard
     const models = await prisma.model.findMany({
