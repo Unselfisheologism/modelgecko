@@ -1,4 +1,4 @@
-// File: c:\Users\HP\Downloads\modelgecko\app\page.tsx
+// File: /home/engine/project/app/page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

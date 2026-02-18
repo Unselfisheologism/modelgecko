@@ -6,24 +6,32 @@ import { Prisma } from '@prisma/client'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-    // Fetch models for leaderboard
-    const models = await prisma.model.findMany({
-        where: {
-            benchmarkScores: { not: Prisma.JsonNull },
-        },
-        orderBy: { name: 'asc' },
-        take: 10,
-    })
-
-    // Sort by MMLU score as default
-    const leaderboard = models
-        .map((model) => {
-            const scores = model.benchmarkScores as Record<string, number> | null
-            const score = scores?.mmlu || scores?.mmlu_c0 || 0
-            return { ...model, score }
+    let leaderboard: any[] = []
+    
+    try {
+        // Fetch models for leaderboard
+        const models = await prisma.model.findMany({
+            where: {
+                benchmarkScores: { not: Prisma.JsonNull },
+            },
+            orderBy: { name: 'asc' },
+            take: 10,
         })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10)
+
+        // Sort by MMLU score as default
+        leaderboard = models
+            .map((model: any) => {
+                const scores = model.benchmarkScores as Record<string, number> | null
+                const score = scores?.mmlu || scores?.mmlu_c0 || 0
+                return { ...model, score }
+            })
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10)
+    } catch (error) {
+        console.error('Error fetching models for homepage:', error)
+        // Provide empty leaderboard on error
+        leaderboard = []
+    }
 
     return (
         <div className="min-h-screen">
@@ -133,7 +141,7 @@ export default async function HomePage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {leaderboard.map((model, index) => (
+                                {leaderboard.map((model: any, index: number) => (
                                     <tr key={model.id} className="border-t">
                                         <td className="px-4 py-3 text-sm">{index + 1}</td>
                                         <td className="px-4 py-3 text-sm font-medium">

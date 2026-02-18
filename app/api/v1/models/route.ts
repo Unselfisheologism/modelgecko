@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // Protected route - requires API key (handled by middleware)
 export async function GET(request: Request) {
     try {
@@ -51,7 +54,7 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error('Error fetching models:', error)
         return NextResponse.json(
-            { error: 'Failed to fetch models' },
+            { error: 'Failed to fetch models', data: [], meta: { total: 0, limit: 100, offset: 0 } },
             { status: 500 }
         )
     }

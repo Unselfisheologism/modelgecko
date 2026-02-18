@@ -1,4 +1,4 @@
-// File: c:\Users\HP\Downloads\modelgecko\app\layout.tsx
+// File: /home/engine/project/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
     try {
         const models = await prisma.model.findMany({
@@ -14,7 +17,7 @@ export async function GET() {
     } catch (error) {
         console.error('Error fetching providers:', error)
         return NextResponse.json(
-            { error: 'Failed to fetch providers' },
+            { error: 'Failed to fetch providers', data: [] },
             { status: 500 }
         )
     }

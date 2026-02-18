@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
@@ -50,7 +53,11 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error('Error fetching models:', error)
         return NextResponse.json(
-            { error: 'Failed to fetch models' },
+            { 
+                error: 'Failed to fetch models',
+                data: [],
+                meta: { total: 0, limit: 50, offset: 0 }
+            },
             { status: 500 }
         )
     }

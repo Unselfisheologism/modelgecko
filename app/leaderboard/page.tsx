@@ -18,21 +18,29 @@ export default async function LeaderboardPage({
 }) {
     const benchmark = searchParams.benchmark || 'mmlu'
 
-    const models = await prisma.model.findMany({
-        where: {
-            benchmarkScores: { not: Prisma.JsonNull },
-        },
-        orderBy: { name: 'asc' },
-    })
+    let models: any[] = []
+    let leaderboard: any[] = []
 
-    const leaderboard = models
-        .map((model) => {
-            const scores = model.benchmarkScores as Record<string, number> | null
-            const score = scores?.[benchmark] || 0
-            return { ...model, score }
+    try {
+        models = await prisma.model.findMany({
+            where: {
+                benchmarkScores: { not: Prisma.JsonNull },
+            },
+            orderBy: { name: 'asc' },
         })
-        .filter((model) => model.score > 0)
-        .sort((a, b) => b.score - a.score)
+
+        leaderboard = models
+            .map((model) => {
+                const scores = model.benchmarkScores as Record<string, number> | null
+                const score = scores?.[benchmark] || 0
+                return { ...model, score }
+            })
+            .filter((model) => model.score > 0)
+            .sort((a, b) => b.score - a.score)
+    } catch (error) {
+        console.error('Error fetching leaderboard:', error)
+        leaderboard = []
+    }
 
     return (
         <div className="min-h-screen">
