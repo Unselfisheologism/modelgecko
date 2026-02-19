@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyWebhookSignature } from '@/lib/dodo'
-import { createApiKey } from '@/lib/unkey'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,36 +41,36 @@ export async function POST(request: Request) {
                     return NextResponse.json({ received: true })
                 }
 
-                // Get plan credits based on price_id (you'd store these in your DB)
+                // Get plan credits based on price_id
                 const planCredits: Record<string, number> = {
-                    // Add your Dodo price IDs and corresponding credits
                     'price_basic': 1000,
                     'price_pro': 10000,
                     'price_enterprise': 100000,
                 }
 
                 const credits = planCredits[price_id] || 0
+                const planName = credits >= 100000 ? 'enterprise' : credits >= 10000 ? 'pro' : 'free'
 
                 // Update user with subscription and credits
                 await prisma.apiUser.update({
-                    where: { clerkUserId: metadata.userId },
+                    where: { supabaseUserId: metadata.userId },
                     data: {
                         dodoSubscriptionId: subscription_id,
                         credits: {
                             increment: credits,
                         },
+                        plan: planName,
                     },
                 })
 
                 // If this is a paid plan, update their Unkey key with higher rate limits
                 if (credits > 1000) {
                     const user = await prisma.apiUser.findUnique({
-                        where: { clerkUserId: metadata.userId },
+                        where: { supabaseUserId: metadata.userId },
                     })
 
                     if (user?.unkeyKeyId) {
                         // Revoke old key and create new one with higher limits
-                        // Note: In production, you'd handle this more gracefully
                         console.log('Upgrading user to paid plan:', metadata.userId)
                     }
                 }
@@ -92,6 +91,7 @@ export async function POST(request: Request) {
                         where: { id: user.id },
                         data: {
                             dodoSubscriptionId: null,
+                            plan: 'free',
                         },
                     })
                 }
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
             case 'invoice.payment_failed': {
                 const { customer_id } = event.data
 
-                // Handle failed payment (maybe revoke API access)
+                // Handle failed payment
                 console.log('Payment failed for customer:', customer_id)
                 break
             }

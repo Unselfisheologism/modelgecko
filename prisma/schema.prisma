@@ -32,17 +32,21 @@ model Model {
 
 model ApiUser {
   id              String   @id @default(uuid())
-  clerkUserId     String   @unique
+  supabaseUserId  String   @unique
   email           String   @unique
+  name            String?
+  avatarUrl       String?
   unkeyKeyId      String?  @unique
   unkeyKey        String?  // The actual API key (shown once)
   dodoCustomerId  String?
   dodoSubscriptionId String?
   credits         Int      @default(0)
+  plan            String   @default("free")
+  emailVerified   Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([clerkUserId])
+  @@index([supabaseUserId])
   @@index([email])
 }
 
