@@ -373,6 +373,7 @@ async function main() {
 
     // Clear existing data
     await prisma.model.deleteMany()
+    await prisma.pricingPlan.deleteMany()
 
     // Seed models
     for (const model of models) {
@@ -382,6 +383,54 @@ async function main() {
     }
 
     console.log(`Seeded ${models.length} models`)
+
+    // Seed pricing plans
+    const pricingPlans = [
+        {
+            id: 'free',
+            name: 'Free',
+            description: 'Perfect for testing and exploration',
+            dodoPriceId: 'price_free',
+            credits: 1000,
+            priceUsd: 0,
+            isActive: true,
+        },
+        {
+            id: 'starter',
+            name: 'Starter',
+            description: 'For hobby projects and small apps',
+            dodoPriceId: 'price_starter',
+            credits: 10000,
+            priceUsd: 29,
+            isActive: true,
+        },
+        {
+            id: 'pro',
+            name: 'Pro',
+            description: 'For production applications',
+            dodoPriceId: 'price_pro',
+            credits: 100000,
+            priceUsd: 99,
+            isActive: true,
+        },
+        {
+            id: 'enterprise',
+            name: 'Enterprise',
+            description: 'Custom solutions for large scale',
+            dodoPriceId: 'price_enterprise',
+            credits: 1000000,
+            priceUsd: 499,
+            isActive: true,
+        },
+    ]
+
+    for (const plan of pricingPlans) {
+        await prisma.pricingPlan.create({
+            data: plan,
+        })
+    }
+
+    console.log(`Seeded ${pricingPlans.length} pricing plans`)
 }
 
 main()

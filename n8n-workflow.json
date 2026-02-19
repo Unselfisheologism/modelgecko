@@ -1,0 +1,190 @@
+{
+  "name": "ModelGecko Data Update Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/models",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$credentials.apiKey}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-openai-models",
+      "name": "Fetch OpenAI Models",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process OpenAI models\nconst items = $input.all();\nconst models = [];\n\nfor (const item of items) {\n  const data = item.json.data;\n  \n  for (const model of data) {\n    // Skip older models\n    if (model.id.startsWith('gpt-3') || model.id.startsWith('davinci')) continue;\n    \n    models.push({\n      json: {\n        slug: model.id.replace(/\\./g, '-').toLowerCase(),\n        name: model.id,\n        provider: 'OpenAI',\n        contextWindow: model.context_window || null,\n        modalities: ['text'],\n        capabilities: ['API Access'],\n        links: {\n          website: 'https://openai.com',\n          api: 'https://platform.openai.com/docs/models/' + model.id\n        }\n      }\n    });\n  }\n}\n\nreturn models;"
+      },
+      "id": "process-openai",
+      "name": "Process OpenAI Models",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/models",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "{{$credentials.anthropicApiKey}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-anthropic-models",
+      "name": "Fetch Anthropic Models",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 500]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process Anthropic models\nconst items = $input.all();\nconst models = [];\n\nfor (const item of items) {\n  const data = item.json.data;\n  \n  for (const model of data) {\n    models.push({\n      json: {\n        slug: model.id.replace(/\\./g, '-').toLowerCase(),\n        name: model.id,\n        provider: 'Anthropic',\n        contextWindow: model.context_window || null,\n        modalities: ['text'],\n        capabilities: ['API Access'],\n        links: {\n          website: 'https://www.anthropic.com',\n          api: 'https://docs.anthropic.com/en/docs/about-claude/models'\n        }\n      }\n    });\n  }\n}\n\nreturn models;"
+      },
+      "id": "process-anthropic",
+      "name": "Process Anthropic Models",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{$env.SUPABASE_URL}}/rest/v1/rpc/update_models",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "models",
+              "value": "{{ $json.models }}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "{{$env.SUPABASE_SERVICE_KEY}}"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.SUPABASE_SERVICE_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-supabase",
+      "name": "Update Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch OpenAI Models",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Anthropic Models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OpenAI Models": {
+      "main": [
+        [
+          {
+            "node": "Process OpenAI Models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Anthropic Models": {
+      "main": [
+        [
+          {
+            "node": "Process Anthropic Models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process OpenAI Models": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Anthropic Models": {
+      "main": [
+        [
+          {
+            "node": "Update Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "modelgecko-data-update"
+}
