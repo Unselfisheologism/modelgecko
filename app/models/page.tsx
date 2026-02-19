@@ -29,15 +29,26 @@ export default async function ModelsPage({
         ]
     }
 
-    const models = await prisma.model.findMany({
-        where,
-        orderBy: { name: 'asc' },
-    })
+    let models: any[] = []
+    let providers: string[] = []
+    let modalities: string[] = []
 
-    // Get unique providers and modalities for filters
-    const allModels = await prisma.model.findMany()
-    const providers = Array.from(new Set(allModels.map((m) => m.provider))).sort()
-    const modalities = Array.from(new Set(allModels.flatMap((m) => m.modalities))).sort()
+    try {
+        models = await prisma.model.findMany({
+            where,
+            orderBy: { name: 'asc' },
+        })
+
+        // Get unique providers and modalities for filters
+        const allModels = await prisma.model.findMany()
+        providers = Array.from(new Set(allModels.map((m: any) => m.provider))).sort()
+        modalities = Array.from(new Set(allModels.flatMap((m: any) => m.modalities))).sort()
+    } catch (error) {
+        console.error('Error fetching models:', error)
+        models = []
+        providers = []
+        modalities = []
+    }
 
     return (
         <div className="min-h-screen">
@@ -89,7 +100,7 @@ export default async function ModelsPage({
                         }}
                     >
                         <option value="">All Providers</option>
-                        {providers.map((p) => (
+                        {providers.map((p: string) => (
                             <option key={p} value={p}>
                                 {p}
                             </option>
@@ -110,7 +121,7 @@ export default async function ModelsPage({
                         }}
                     >
                         <option value="">All Modalities</option>
-                        {modalities.map((m) => (
+                        {modalities.map((m: string) => (
                             <option key={m} value={m}>
                                 {m}
                             </option>
@@ -120,7 +131,7 @@ export default async function ModelsPage({
 
                 {/* Models Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {models.map((model) => (
+                    {models.map((model: any) => (
                         <Link
                             key={model.id}
                             href={`/models/${model.slug}`}
@@ -131,7 +142,7 @@ export default async function ModelsPage({
                                 <span className="text-sm text-muted-foreground">{model.provider}</span>
                             </div>
                             <div className="flex flex-wrap gap-2 mb-4">
-                                {model.modalities.map((m) => (
+                                {model.modalities.map((m: string) => (
                                     <Badge key={m} variant="secondary">
                                         {m}
                                     </Badge>

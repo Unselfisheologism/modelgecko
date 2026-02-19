@@ -1,4 +1,4 @@
-// File: c:\Users\HP\Downloads\modelgecko\app\api\checkout\route.ts
+// File: /home/engine/project/app/api/checkout/route.ts
 import * as entry from '../../../../../app/api/checkout/route.js'
 import type { NextRequest } from 'next/server.js'
 
