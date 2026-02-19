@@ -10,8 +10,10 @@ const publicRoutes = [
     '/api/pricing',
     '/api/providers',
     '/api/modalities',
+    '/api/health',
     '/api/auth',
     '/api/webhooks',
+    '/api-docs',
 ]
 
 // Routes that require authentication (dashboard, etc.)
@@ -20,6 +22,7 @@ const authRoutes = [
     '/api/keys',
     '/api/checkout',
     '/api/portal',
+    '/api/admin',
 ]
 
 // Routes that require API key
