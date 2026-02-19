@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createApiKey, revokeApiKey, getApiKeyUsage } from '@/lib/unkey'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
     try {
         const body = await request.json()
