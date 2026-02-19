@@ -87,6 +87,53 @@ export async function GET(request: Request) {
             }
         }
 
+        // Pricing range filter
+        if (params.minPricing !== undefined || params.maxPricing !== undefined) {
+            const priceFilters: Prisma.ModelWhereInput[] = []
+
+            if (params.minPricing !== undefined) {
+                priceFilters.push({
+                    OR: [
+                        {
+                            pricing: {
+                                path: ['inputPrice'],
+                                gte: params.minPricing,
+                            },
+                        },
+                        {
+                            pricing: {
+                                path: ['outputPrice'],
+                                gte: params.minPricing,
+                            },
+                        },
+                    ],
+                })
+            }
+
+            if (params.maxPricing !== undefined) {
+                priceFilters.push({
+                    OR: [
+                        {
+                            pricing: {
+                                path: ['inputPrice'],
+                                lte: params.maxPricing,
+                            },
+                        },
+                        {
+                            pricing: {
+                                path: ['outputPrice'],
+                                lte: params.maxPricing,
+                            },
+                        },
+                    ],
+                })
+            }
+
+            if (priceFilters.length) {
+                where.AND = [...(where.AND ?? []), ...priceFilters]
+            }
+        }
+
         // Build orderBy based on sortBy and sortOrder
         const orderBy: Prisma.ModelOrderByWithRelationInput = {}
         if (params.sortBy === 'contextWindow') {
