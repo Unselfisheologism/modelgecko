@@ -64,14 +64,41 @@ export async function PUT(
             updateData.pricing = validatedData.pricing ?? Prisma.JsonNull
         }
         if (validatedData.capabilities !== undefined) updateData.capabilities = validatedData.capabilities
+        if (validatedData.tags !== undefined) updateData.tags = validatedData.tags
         if (validatedData.links !== undefined) {
             updateData.links = validatedData.links ?? Prisma.JsonNull
         }
+        if (validatedData.changelog !== undefined) {
+            updateData.changelog = validatedData.changelog ?? Prisma.JsonNull
+        }
 
-        // Update model
-        const model = await prisma.model.update({
-            where: { slug },
-            data: updateData,
+        updateData.lastUpdated = new Date()
+
+        const inputPrice = typeof validatedData.pricing?.inputPrice === 'number'
+            ? validatedData.pricing.inputPrice
+            : null
+        const outputPrice = typeof validatedData.pricing?.outputPrice === 'number'
+            ? validatedData.pricing.outputPrice
+            : null
+        const shouldTrackPrice = validatedData.pricing !== undefined && (inputPrice !== null || outputPrice !== null)
+
+        const model = await prisma.$transaction(async (tx) => {
+            const updated = await tx.model.update({
+                where: { slug },
+                data: updateData,
+            })
+
+            if (shouldTrackPrice) {
+                await tx.priceHistory.create({
+                    data: {
+                        modelId: updated.slug,
+                        inputPrice: inputPrice ?? 0,
+                        outputPrice: outputPrice ?? 0,
+                    },
+                })
+            }
+
+            return updated
         })
 
         return successResponse(model, undefined, { 'X-Admin-Action': 'update' })

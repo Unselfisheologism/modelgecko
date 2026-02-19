@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { modelQuerySchema } from '@/lib/validation'
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response'
@@ -17,6 +16,7 @@ export async function GET(request: Request) {
             params = modelQuerySchema.parse({
                 provider: searchParams.get('provider') || undefined,
                 modality: searchParams.get('modality') || undefined,
+                category: searchParams.get('category') || undefined,
                 search: searchParams.get('search') || undefined,
                 limit: searchParams.get('limit') || '50',
                 offset: searchParams.get('offset') || '0',
@@ -47,6 +47,13 @@ export async function GET(request: Request) {
         if (params.modality) {
             where.modalities = {
                 has: params.modality,
+            }
+        }
+
+        // Category/tag filter
+        if (params.category) {
+            where.tags = {
+                has: params.category,
             }
         }
 
@@ -105,6 +112,19 @@ export async function GET(request: Request) {
             }),
             prisma.model.count({ where }),
         ])
+
+        if (params.search && params.search.trim().length > 1) {
+            try {
+                await prisma.searchAnalytics.create({
+                    data: {
+                        query: params.search.trim().toLowerCase(),
+                        results: total,
+                    },
+                })
+            } catch (analyticsError) {
+                console.error('Failed to record search analytics:', analyticsError)
+            }
+        }
 
         // Transform response
         const transformedModels = models.map(model => ({
