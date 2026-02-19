@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { modelQuerySchema } from '@/lib/validation'
 import { successResponse, errorResponse, validationErrorResponse } from '@/lib/api-response'
@@ -17,6 +16,7 @@ export async function GET(request: Request) {
             params = modelQuerySchema.parse({
                 provider: searchParams.get('provider') || undefined,
                 modality: searchParams.get('modality') || undefined,
+                category: searchParams.get('category') || undefined,
                 search: searchParams.get('search') || undefined,
                 limit: searchParams.get('limit') || '50',
                 offset: searchParams.get('offset') || '0',
@@ -50,6 +50,13 @@ export async function GET(request: Request) {
             }
         }
 
+        // Category/tag filter
+        if (params.category) {
+            where.tags = {
+                has: params.category,
+            }
+        }
+
         // Search filter (name or provider)
         if (params.search) {
             where.OR = [
@@ -80,6 +87,53 @@ export async function GET(request: Request) {
             }
         }
 
+        // Pricing range filter
+        if (params.minPricing !== undefined || params.maxPricing !== undefined) {
+            const priceFilters: Prisma.ModelWhereInput[] = []
+
+            if (params.minPricing !== undefined) {
+                priceFilters.push({
+                    OR: [
+                        {
+                            pricing: {
+                                path: ['inputPrice'],
+                                gte: params.minPricing,
+                            },
+                        },
+                        {
+                            pricing: {
+                                path: ['outputPrice'],
+                                gte: params.minPricing,
+                            },
+                        },
+                    ],
+                })
+            }
+
+            if (params.maxPricing !== undefined) {
+                priceFilters.push({
+                    OR: [
+                        {
+                            pricing: {
+                                path: ['inputPrice'],
+                                lte: params.maxPricing,
+                            },
+                        },
+                        {
+                            pricing: {
+                                path: ['outputPrice'],
+                                lte: params.maxPricing,
+                            },
+                        },
+                    ],
+                })
+            }
+
+            if (priceFilters.length) {
+                where.AND = [...(where.AND ?? []), ...priceFilters]
+            }
+        }
+
         // Build orderBy based on sortBy and sortOrder
         const orderBy: Prisma.ModelOrderByWithRelationInput = {}
         if (params.sortBy === 'contextWindow') {
@@ -105,6 +159,19 @@ export async function GET(request: Request) {
             }),
             prisma.model.count({ where }),
         ])
+
+        if (params.search && params.search.trim().length > 1) {
+            try {
+                await prisma.searchAnalytics.create({
+                    data: {
+                        query: params.search.trim().toLowerCase(),
+                        results: total,
+                    },
+                })
+            } catch (analyticsError) {
+                console.error('Failed to record search analytics:', analyticsError)
+            }
+        }
 
         // Transform response
         const transformedModels = models.map(model => ({

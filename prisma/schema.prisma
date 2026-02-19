@@ -19,15 +19,58 @@ model Model {
   benchmarkScores Json?
   pricing         Json?
   capabilities    String[]
+  tags            String[] @default([])
   links           Json?
+  changelog       Json?
   lastUpdated     DateTime @default(now())
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  priceHistory    PriceHistory[]
+  marketMetrics   MarketMetrics?
+
   @@index([slug])
   @@index([provider])
   @@index([name])
+  @@index([lastUpdated])
+}
+
+model PriceHistory {
+  id          String   @id @default(uuid())
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [slug])
+  inputPrice  Float
+  outputPrice Float
+  recordedAt  DateTime @default(now())
+
+  @@index([modelId])
+  @@index([recordedAt])
+}
+
+model MarketMetrics {
+  id             String   @id @default(uuid())
+  modelId        String   @unique
+  model          Model    @relation(fields: [modelId], references: [slug])
+  totalViews     Int      @default(0)
+  totalApiCalls  Int      @default(0)
+  popularity     Float    @default(0.0)
+  growthRate     Float    @default(0.0)
+  lastUpdated    DateTime @default(now())
+
+  @@index([lastUpdated])
+  @@index([popularity])
+  @@index([growthRate])
+}
+
+model SearchAnalytics {
+  id        String   @id @default(uuid())
+  query     String
+  results   Int
+  timestamp DateTime @default(now())
+
+  @@index([query])
+  @@index([timestamp])
 }
 
 model ApiUser {

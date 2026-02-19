@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { successResponse, notFoundResponse, errorResponse } from '@/lib/api-response'
 
@@ -51,6 +50,7 @@ export async function GET(
             benchmarkScores: model.benchmarkScores as Record<string, number> | null,
             pricing: model.pricing as Record<string, any> | null,
             links: model.links as Record<string, string> | null,
+            changelog: model.changelog as Record<string, any>[] | null,
         }
 
         // Cache the result

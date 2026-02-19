@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const modelCategories = ['coding', 'reasoning', 'image', 'audio', 'video', 'multimodal'] as const
+
 export const modelSchema = z.object({
     slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens only'),
     name: z.string().min(1).max(200),
@@ -14,12 +16,18 @@ export const modelSchema = z.object({
         unit: z.string().optional(),
     }).optional().nullable(),
     capabilities: z.array(z.string()).default([]),
+    tags: z.array(z.enum(modelCategories)).default([]),
     links: z.object({
         website: z.string().url().optional(),
         paper: z.string().url().optional(),
         huggingface: z.string().url().optional(),
         github: z.string().url().optional(),
     }).optional().nullable(),
+    changelog: z.array(z.object({
+        date: z.string().datetime(),
+        title: z.string().min(1),
+        description: z.string().optional(),
+    })).optional().nullable(),
 })
 
 export const updateModelSchema = modelSchema.partial().omit({ slug: true })
@@ -27,6 +35,7 @@ export const updateModelSchema = modelSchema.partial().omit({ slug: true })
 export const modelQuerySchema = z.object({
     provider: z.string().optional(),
     modality: z.string().optional(),
+    category: z.enum(modelCategories).optional(),
     search: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(1000).default(50),
     offset: z.coerce.number().int().min(0).default(0),
