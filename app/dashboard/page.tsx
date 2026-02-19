@@ -1,8 +1,10 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Key, CreditCard, BarChart3, Copy, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Key, CreditCard, BarChart3, Copy, RefreshCw, LogOut, User } from 'lucide-react'
+import { createBrowserClient } from '@/lib/supabase'
 
 interface ApiKeyData {
     keyId: string
@@ -16,23 +18,40 @@ interface ApiKeyData {
     plan: string
 }
 
+interface UserData {
+    id: string
+    email: string
+    name?: string
+}
+
 export default function DashboardPage() {
     const [keyData, setKeyData] = useState<ApiKeyData | null>(null)
+    const [user, setUser] = useState<UserData | null>(null)
     const [loading, setLoading] = useState(true)
     const [showKey, setShowKey] = useState(false)
     const [copied, setCopied] = useState(false)
-
-    // For demo purposes - in production, this would come from auth
-    const userId = "demo-user"
+    const router = useRouter()
+    const supabase = createBrowserClient()
 
     useEffect(() => {
-        async function fetchApiKey() {
+        async function init() {
+            // Check auth session
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session) {
+                router.push('/login?redirectTo=/dashboard')
+                return
+            }
+
+            setUser({
+                id: session.user.id,
+                email: session.user.email!,
+                name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
+            })
+
+            // Fetch API key
             try {
-                const response = await fetch('/api/keys', {
-                    headers: {
-                        'x-user-id': userId,
-                    },
-                })
+                const response = await fetch('/api/keys')
                 if (response.ok) {
                     const data = await response.json()
                     setKeyData(data)
@@ -44,8 +63,8 @@ export default function DashboardPage() {
             }
         }
 
-        fetchApiKey()
-    }, [userId])
+        init()
+    }, [router, supabase])
 
     const handleCreateKey = async () => {
         setLoading(true)
@@ -55,7 +74,7 @@ export default function DashboardPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ userId, plan: 'free' }),
+                body: JSON.stringify({ plan: 'free' }),
             })
 
             if (response.ok) {
@@ -77,6 +96,20 @@ export default function DashboardPage() {
         }
     }
 
+    const handleSignOut = async () => {
+        await supabase.auth.signOut()
+        router.push('/')
+        router.refresh()
+    }
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen">
             <header className="border-b">
@@ -94,12 +127,21 @@ export default function DashboardPage() {
                         <Link href="/api-docs" className="text-sm font-medium hover:text-primary">
                             API
                         </Link>
-                        <Link
-                            href="/dashboard"
-                            className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                        >
-                            Dashboard
-                        </Link>
+                        <div className="flex items-center gap-4">
+                            {user && (
+                                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <User className="w-4 h-4" />
+                                    {user.email}
+                                </span>
+                            )}
+                            <button
+                                onClick={handleSignOut}
+                                className="text-sm font-medium px-4 py-2 border rounded-md hover:bg-muted flex items-center gap-2"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Sign Out
+                            </button>
+                        </div>
                     </nav>
                 </div>
             </header>
@@ -107,11 +149,7 @@ export default function DashboardPage() {
             <main className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
-                {loading ? (
-                    <div className="flex items-center justify-center py-12">
-                        <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-                    </div>
-                ) : !keyData?.key ? (
+                {!keyData?.key ? (
                     <div className="p-8 rounded-lg border bg-card text-center">
                         <Key className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                         <h2 className="text-xl font-semibold mb-2">No API Key</h2>
@@ -134,7 +172,7 @@ export default function DashboardPage() {
                                     <Key className="w-5 h-5" />
                                     Your API Key
                                 </h2>
-                                <span className="px-3 py-1 rounded-full text-sm bg-secondary">
+                                <span className="px-3 py-1 rounded-full text-sm bg-secondary capitalize">
                                     {keyData.plan}
                                 </span>
                             </div>
@@ -158,7 +196,7 @@ export default function DashboardPage() {
                             </div>
 
                             <p className="text-sm text-destructive">
-                                Make sure to copy your API key now. You won't be able to see it again!
+                                Make sure to copy your API key now. You won&apos;t be able to see it again!
                             </p>
                         </div>
 

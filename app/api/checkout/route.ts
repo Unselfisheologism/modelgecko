@@ -1,27 +1,67 @@
 import { NextResponse } from 'next/server'
 import { createCheckoutSession, createCustomer } from '@/lib/dodo'
 import { prisma } from '@/lib/db'
+import { cookies } from 'next/headers'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 export const dynamic = 'force-dynamic'
 
+// Helper to get authenticated user
+async function getAuthUser() {
+    const cookieStore = cookies()
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                    cookieStore.set({ name, value, ...options })
+                },
+                remove(name: string, options: CookieOptions) {
+                    cookieStore.set({ name, value: '', ...options })
+                },
+            },
+        }
+    )
+
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.user || null
+}
+
 export async function POST(request: Request) {
     try {
-        const body = await request.json()
-        const { priceId, userId, email, planName } = body
+        const user = await getAuthUser()
 
-        if (!priceId || !userId || !email) {
+        if (!user) {
             return NextResponse.json(
-                { error: 'Missing required fields: priceId, userId, email' },
+                { error: 'Authentication required' },
+                { status: 401 }
+            )
+        }
+
+        const body = await request.json()
+        const { priceId, planName } = body
+
+        if (!priceId) {
+            return NextResponse.json(
+                { error: 'Missing required field: priceId' },
                 { status: 400 }
             )
         }
 
+        const userId = user.id
+        const email = user.email!
+
         // Get user from database
-        const user = await prisma.apiUser.findUnique({
-            where: { clerkUserId: userId },
+        const dbUser = await prisma.apiUser.findUnique({
+            where: { supabaseUserId: userId },
         })
 
-        let customerId = user?.dodoCustomerId
+        let customerId = dbUser?.dodoCustomerId
 
         // Create customer in Dodo if not exists
         if (!customerId) {
@@ -30,7 +70,7 @@ export async function POST(request: Request) {
 
             // Update user with customer ID
             await prisma.apiUser.update({
-                where: { clerkUserId: userId },
+                where: { supabaseUserId: userId },
                 data: { dodoCustomerId: customerId },
             })
         }

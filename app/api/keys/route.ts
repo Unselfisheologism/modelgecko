@@ -1,24 +1,55 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createApiKey, revokeApiKey, getApiKeyUsage } from '@/lib/unkey'
+import { cookies } from 'next/headers'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 export const dynamic = 'force-dynamic'
 
+// Helper to get authenticated user
+async function getAuthUser() {
+    const cookieStore = cookies()
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                    cookieStore.set({ name, value, ...options })
+                },
+                remove(name: string, options: CookieOptions) {
+                    cookieStore.set({ name, value: '', ...options })
+                },
+            },
+        }
+    )
+
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.user || null
+}
+
 export async function POST(request: Request) {
     try {
-        const body = await request.json()
-        const { userId, plan = 'free' } = body
+        const user = await getAuthUser()
 
-        if (!userId) {
+        if (!user) {
             return NextResponse.json(
-                { error: 'Missing userId' },
-                { status: 400 }
+                { error: 'Authentication required' },
+                { status: 401 }
             )
         }
 
+        const body = await request.json()
+        const { plan = 'free' } = body
+        const userId = user.id
+
         // Check if user already has a key
         const existingUser = await prisma.apiUser.findUnique({
-            where: { clerkUserId: userId },
+            where: { supabaseUserId: userId },
         })
 
         if (existingUser?.unkeyKeyId) {
@@ -30,17 +61,20 @@ export async function POST(request: Request) {
         const keyResult = await createApiKey(userId, plan)
 
         // Save to database
-        const user = await prisma.apiUser.upsert({
-            where: { clerkUserId: userId },
+        const dbUser = await prisma.apiUser.upsert({
+            where: { supabaseUserId: userId },
             update: {
                 unkeyKeyId: keyResult.keyId,
                 unkeyKey: keyResult.key,
+                plan,
             },
             create: {
-                clerkUserId: userId,
-                email: existingUser?.email || '',
+                supabaseUserId: userId,
+                email: user.email || existingUser?.email || '',
                 unkeyKeyId: keyResult.keyId,
                 unkeyKey: keyResult.key,
+                plan,
+                credits: 1000,
             },
         })
 
@@ -61,20 +95,20 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
     try {
-        const userId = request.headers.get('x-user-id')
+        const user = await getAuthUser()
 
-        if (!userId) {
+        if (!user) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
+                { error: 'Authentication required' },
                 { status: 401 }
             )
         }
 
-        const user = await prisma.apiUser.findUnique({
-            where: { clerkUserId: userId },
+        const dbUser = await prisma.apiUser.findUnique({
+            where: { supabaseUserId: user.id },
         })
 
-        if (!user || !user.unkeyKeyId) {
+        if (!dbUser || !dbUser.unkeyKeyId) {
             return NextResponse.json(
                 { error: 'No API key found' },
                 { status: 404 }
@@ -82,18 +116,18 @@ export async function GET(request: Request) {
         }
 
         // Get usage from Unkey
-        const usage = await getApiKeyUsage(user.unkeyKeyId)
+        const usage = await getApiKeyUsage(dbUser.unkeyKeyId)
 
         return NextResponse.json({
-            keyId: user.unkeyKeyId,
-            credits: user.credits,
+            keyId: dbUser.unkeyKeyId,
+            credits: dbUser.credits,
             usage: {
                 total: usage?.usage || 0,
-                remaining: Math.max(0, (user.credits || 1000) - (usage?.usage || 0)),
-                limit: user.credits || 1000,
+                remaining: Math.max(0, (dbUser.credits || 1000) - (usage?.usage || 0)),
+                limit: dbUser.credits || 1000,
             },
-            plan: usage?.meta?.plan || 'free',
-            createdAt: user.createdAt,
+            plan: usage?.meta?.plan || dbUser.plan || 'free',
+            createdAt: dbUser.createdAt,
         })
     } catch (error) {
         console.error('Error fetching API key:', error)

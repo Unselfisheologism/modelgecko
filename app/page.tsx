@@ -1,11 +1,20 @@
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Database, Globe, Key, Zap } from 'lucide-react'
+import { ArrowRight, BarChart3, Database, Globe, Key, Zap, User } from 'lucide-react'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
+async function getSession() {
+    const supabase = createServerSupabaseClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    return session
+}
+
 export default async function HomePage() {
+    const session = await getSession()
+
     // Fetch models for leaderboard
     const models = await prisma.model.findMany({
         where: {
@@ -43,12 +52,35 @@ export default async function HomePage() {
                         <Link href="/api-docs" className="text-sm font-medium hover:text-primary">
                             API
                         </Link>
-                        <Link
-                            href="/dashboard"
-                            className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                        >
-                            Dashboard
-                        </Link>
+                        {session ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <User className="w-4 h-4" />
+                                    {session.user.email}
+                                </span>
+                                <Link
+                                    href="/dashboard"
+                                    className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                                >
+                                    Dashboard
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <Link
+                                    href="/login"
+                                    className="text-sm font-medium hover:text-primary"
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    href="/signup"
+                                    className="text-sm font-medium px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                                >
+                                    Get Started
+                                </Link>
+                            </div>
+                        )}
                     </nav>
                 </div>
             </header>
@@ -160,11 +192,11 @@ export default async function HomePage() {
                         Free tier includes 1,000 requests/month.
                     </p>
                     <Link
-                        href="/api-docs"
+                        href={session ? "/dashboard" : "/signup"}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
                         <Zap className="w-4 h-4" />
-                        Start Building
+                        {session ? 'Go to Dashboard' : 'Start Building'}
                     </Link>
                 </div>
             </section>
